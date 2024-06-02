@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
-import { toSnakeCase, checkHeaders } from './utils';
+import { toSnakeCase, checkHeaders, requiredHeaders } from './utils';
 const csv = require('csv-parser'); // Use require instead of import
 
 dotenv.config();
@@ -19,45 +19,64 @@ const client = new Client({
 
 client.connect();
 
-const csvFilePath = './data/companies.csv';
+async function deleteAllData () {
+  console.log('Deleting all data...');
+  await client.query('DELETE FROM target;');
+  await client.query('DELETE FROM emission;');
+  await client.query('DELETE FROM commitment;');
+  await client.query('DELETE FROM company;');
+}
 
-const results: any[] = [];
+async function importAll () {
+  await deleteAllData();
+  await importCompanies();
+}
 
-fs.createReadStream(csvFilePath)
-  .pipe(csv())
-  .on('headers', (headers: string[]) => {
-    const snakeCaseHeaders = headers.map(toSnakeCase);
-    const missingHeaders = checkHeaders(snakeCaseHeaders);
-
-    if (missingHeaders.length > 0) {
-      console.error(`Missing headers: ${missingHeaders.join(', ')}`);
-      process.exit(1);
-    }
-
-    console.log('Headers:', snakeCaseHeaders);
-  })
-  .on('data', (data: any) => results.push(data))
-  .on('end', async () => {
-    try {
-      for (const row of results) {
-        const snakeCaseRow = Object.keys(row).reduce((acc: Record<string, any>, key) => {
-          acc[toSnakeCase(key)] = row[key];
-          return acc;
-        }, {} as Record<string, any>);
-
-        const columns = Object.keys(snakeCaseRow).join(', ');
-        const values = Object.values(snakeCaseRow);
-        const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
-
-        const query = `INSERT INTO company (${columns}) VALUES (${valuePlaceholders})`;
-
-        await client.query(query, values);
+async function importCompanies (csvFilePath = './data/companies.csv') {
+  const results: any[] = [];
+  
+  fs.createReadStream(csvFilePath)
+    .pipe(csv())
+    .on('headers', (headers: string[]) => {
+      const snakeCaseHeaders = headers.map(toSnakeCase);
+      const missingHeaders = checkHeaders(snakeCaseHeaders);
+  
+      if (missingHeaders.length > 0) {
+        console.error(`Missing headers: ${missingHeaders.join(', ')}`);
+        process.exit(1);
       }
+  
+      // console.log('Headers in CSV:', snakeCaseHeaders);
+    })
+    .on('data', (data: any) => results.push(data))
+    .on('end', async () => {
+      try {
+        for (const row of results) {
+          // Filter and map row data to required headers
+          const filteredRow = Object.keys(row).reduce((acc: Record<string, any>, header) => {
+            const snakeCaseHeader = toSnakeCase(header);
+            if (requiredHeaders.includes(snakeCaseHeader) && row[header] !== undefined) { // Use the original header name to access the row data
+              acc[snakeCaseHeader] = row[header];
+            }
+            return acc;
+          }, {} as Record<string, any>);
+  
+          const columns = Object.keys(filteredRow).join(', ');
+          const values = Object.values(filteredRow);
+          const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
+  
+          console.log('Importing:', filteredRow.name);
+          const query = `INSERT INTO company (${columns}) VALUES (${valuePlaceholders})`;  
+          await client.query(query, values);
+        }
+  
+        console.log('Data imported successfully.');
+      } catch (error) {
+        console.error('Error inserting data:', error);
+      } finally {
+        client.end();
+      }
+    });
+}
 
-      console.log('Data imported successfully.');
-    } catch (error) {
-      console.error('Error inserting data:', error);
-    } finally {
-      client.end();
-    }
-  });
+importAll();

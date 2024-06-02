@@ -9,7 +9,7 @@ export function toSnakeCase(str: string): string {
 export const requiredHeaders = [
   'name',
   'industry',
-  'isic',
+  // 'isic',
   'lei',
   'company_url',
   'source_reports_page',
