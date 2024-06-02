@@ -24,13 +24,13 @@ async function deleteAllData() {
   await client.query('DELETE FROM target;');
   await client.query('DELETE FROM emission;');
   await client.query('DELETE FROM commitment;');
-  // await client.query('DELETE FROM company;');
+  await client.query('DELETE FROM company;');
 }
 
 async function importAll() {
   await deleteAllData();
-  // await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv');
-  //await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name');
+  await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv');
+  await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name');
   await importCsvFileToPostgres(client, 'target', tableHeaders.target, './data/targets.csv', 'company_name');
 }
 
