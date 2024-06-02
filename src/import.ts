@@ -30,7 +30,8 @@ async function deleteAllData() {
 async function importAll() {
   await deleteAllData();
   // await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv');
-  await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name');
+  //await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name');
+  await importCsvFileToPostgres(client, 'target', tableHeaders.target, './data/targets.csv', 'company_name');
 }
 
 async function importCsvFileToPostgres(
@@ -67,14 +68,15 @@ async function importCsvFileToPostgres(
               const snakeCaseHeader = toSnakeCase(header);
               if (requiredHeaders.map(header => header.name).includes(snakeCaseHeader) && row[header] !== undefined) { // Use the original header name to access the row data
                 const requiredHeader = requiredHeaders.find(header => header.name === snakeCaseHeader);
-                const value = row[header] === ''
+                const valueTrimmed = row[header].replace('NA', '').trim();
+                const valueFormatted = valueTrimmed === ''
                   ? null
                   : requiredHeader ?.type === 'integer'
-                    ? parseInt(row[header])
+                    ? parseInt(valueTrimmed)
                     : requiredHeader ?.type === 'float'
-                        ? parseFloat(row[header])
-                        : row[header];
-                acc[snakeCaseHeader] = value;
+                        ? parseFloat(valueTrimmed)
+                        : valueTrimmed;
+                acc[snakeCaseHeader] = valueFormatted;
               }
               return acc;
             }, {} as Record<string, any>);
@@ -85,7 +87,7 @@ async function importCsvFileToPostgres(
 
             const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
             await client.query(query, values);
-            //console.log(`Imported ${tableName}:`, filteredRow[previewField]);
+            console.log(`Imported ${tableName}:`, filteredRow[previewField]);
           } catch (error: any) {
             console.warn('Error inserting row:', rowIndex, error?.message);
           }

@@ -2,6 +2,7 @@ import * as _ from 'lodash';
 
 // Convert a string to snake_case
 export function toSnakeCase(str: string): string {
+  if (str === 'Sub-type') return '"sub-type"'; // TODO: workaround for 'sub-type' header
   return _.snakeCase(str);
 }
 
@@ -76,6 +77,28 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'source_revenue' },
     { name: 'source_revenue_link' },
     { name: 'status' },
+  ],
+  target: [
+    { name: 'company_name' },
+    // { name: 'lei' },
+    { name: 'action' },
+    { name: 'commitment_type' },
+    { name: 'commitment_deadline' },
+    { name: 'status' },
+    { name: 'reason_for_commitment_extension_or_removal' },
+    { name: 'full_target_language' },
+    { name: 'company_temperature_alignment' },
+    { name: 'target' },
+    { name: 'target_wording' },
+    { name: 'scope' },
+    { name: 'target_value' },
+    { name: 'type' },
+    { name: '"sub-type"' }, // TODO: fix this header
+    { name: 'target_classification' },
+    { name: 'base_year' },
+    { name: 'target_year' },
+    { name: 'year_type' },
+    { name: 'date_published' },
   ]
 };
 
