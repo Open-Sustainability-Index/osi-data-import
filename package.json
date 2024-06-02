@@ -1,0 +1,27 @@
+{
+  "name": "sheet-sync",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/import.ts",
+    "start-sheets": "functions-framework --target=readSheet"
+  },
+  "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "fs": "^0.0.1-security",
+    "googleapis": "^137.1.0",
+    "lodash": "^4.17.21",
+    "path": "^0.12.7",
+    "pg": "^8.11.5",
+    "process": "^0.11.10"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.4",
+    "@types/node": "^20.13.0",
+    "@types/pg": "^8.11.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
