@@ -6,22 +6,24 @@ export function toSnakeCase(str: string): string {
 }
 
 // Required headers checklist
-export const requiredHeaders = [
-  'name',
-  'industry',
-  // 'isic',
-  'lei',
-  'company_url',
-  'source_reports_page',
-  'hq_country',
-  // 'sbt_status',
-  // 'sbt_near_term_year',
-  // 'sbt_near_term_target',
-  // 'net_zero_year',
-];
+export const tableHeaders = {
+  company: [
+    'name',
+    'industry',
+    // 'isic',
+    'lei',
+    'company_url',
+    'source_reports_page',
+    'hq_country',
+    // 'sbt_status',
+    // 'sbt_near_term_year',
+    // 'sbt_near_term_target',
+    // 'net_zero_year',
+  ]
+};
 
 // Check for missing headers
-export function checkHeaders(headers: string[]): string[] {
+export function checkHeaders(requiredHeaders: string[], headers: string[]): string[] {
   const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
   return missingHeaders;
 }

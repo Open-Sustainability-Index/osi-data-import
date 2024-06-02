@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
-import { toSnakeCase, checkHeaders, requiredHeaders } from './utils';
+import { toSnakeCase, checkHeaders, tableHeaders } from './utils';
 const csv = require('csv-parser'); // Use require instead of import
 
 dotenv.config();
@@ -29,17 +29,23 @@ async function deleteAllData () {
 
 async function importAll () {
   await deleteAllData();
-  await importCompanies();
+  await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv');
 }
 
-async function importCompanies (csvFilePath = './data/companies.csv') {
+async function importCsvFileToPostgres (
+  client: Client,
+  tableName: string,
+  requiredHeaders: string[],
+  csvFilePath = './data/companies.csv',
+  previewField = 'name',
+) {
   const results: any[] = [];
   
   fs.createReadStream(csvFilePath)
     .pipe(csv())
     .on('headers', (headers: string[]) => {
       const snakeCaseHeaders = headers.map(toSnakeCase);
-      const missingHeaders = checkHeaders(snakeCaseHeaders);
+      const missingHeaders = checkHeaders(requiredHeaders, snakeCaseHeaders);
   
       if (missingHeaders.length > 0) {
         console.error(`Missing headers: ${missingHeaders.join(', ')}`);
@@ -65,8 +71,8 @@ async function importCompanies (csvFilePath = './data/companies.csv') {
           const values = Object.values(filteredRow);
           const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
   
-          console.log('Importing:', filteredRow.name);
-          const query = `INSERT INTO company (${columns}) VALUES (${valuePlaceholders})`;  
+          console.log(`Importing ${tableName}:`, filteredRow[previewField]);
+          const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;  
           await client.query(query, values);
         }
   
