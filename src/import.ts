@@ -69,9 +69,11 @@ async function importCsvFileToPostgres(
                 const requiredHeader = requiredHeaders.find(header => header.name === snakeCaseHeader);
                 const value = row[header] === ''
                   ? null
-                  : requiredHeader ?.type === 'number'
-                    ? parseFloat(row[header])
-                    : row[header];
+                  : requiredHeader ?.type === 'integer'
+                    ? parseInt(row[header])
+                    : requiredHeader ?.type === 'float'
+                        ? parseFloat(row[header])
+                        : row[header];
                 acc[snakeCaseHeader] = value;
               }
               return acc;
@@ -83,7 +85,7 @@ async function importCsvFileToPostgres(
 
             const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
             await client.query(query, values);
-            console.log(`Imported ${tableName}:`, filteredRow[previewField]);
+            //console.log(`Imported ${tableName}:`, filteredRow[previewField]);
           } catch (error: any) {
             console.warn('Error inserting row:', rowIndex, error?.message);
           }
