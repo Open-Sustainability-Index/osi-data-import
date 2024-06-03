@@ -2,7 +2,6 @@ import * as _ from 'lodash';
 
 // Convert a string to snake_case
 export function toSnakeCase(str: string): string {
-  if (str === 'Sub-type') return '"sub-type"'; // TODO: workaround for 'sub-type' header
   return _.snakeCase(str);
 }
 
@@ -19,20 +18,12 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     // { name: 'isic' },
     { name: 'lei' },
     { name: 'company_url' },
-    { name: 'source_reports_page' },
     { name: 'hq_country' },
-    // { name: 'sbt_status' },
-    // { name: 'sbt_near_term_year' },
-    // { name: 'sbt_near_term_target' },
-    // { name: 'net_zero_year' },
   ],
   emission: [
     { name: 'company_name' },
     { name: 'year' },
     { name: 'fiscal_year' },
-    { name: 'industry' },
-    { name: 'isic_rev_4' },
-    { name: 'hq_country_move' },
     { name: 'scope_1', type: 'float' },
     { name: 'scope_2_market_based', type: 'float' },
     { name: 'scope_2_location_based', type: 'float' },
@@ -71,7 +62,7 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'emission_page' },
     { name: 'page_revenue' },
     { name: 'publication_date' },
-    { name: 'source_emisions_page_move' },
+    { name: 'source_emissions_page_move' },
     { name: 'source_emission_link' },
     { name: 'source_emission_report' },
     { name: 'source_revenue' },
@@ -82,10 +73,6 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'company_name' },
     // { name: 'lei' },
     { name: 'action' },
-    { name: 'commitment_type' },
-    { name: 'commitment_deadline' },
-    { name: 'status' },
-    { name: 'reason_for_commitment_extension_or_removal' },
     { name: 'full_target_language' },
     { name: 'company_temperature_alignment' },
     { name: 'target' },
@@ -93,10 +80,20 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'scope' },
     { name: 'target_value' },
     { name: 'type' },
-    { name: '"sub-type"' }, // TODO: fix this header
+    { name: 'sub_type' }, // TODO: fix this header
     { name: 'target_classification' },
     { name: 'base_year' },
     { name: 'target_year' },
+    { name: 'year_type' },
+    { name: 'date_published' },
+  ],
+  commitment: [
+    { name: 'company_name' },
+    { name: 'action' },
+    { name: 'commitment_type' },
+    { name: 'commitment_deadline' },
+    { name: 'status' },
+    { name: 'reason_for_commitment_extension_or_removal' },
     { name: 'year_type' },
     { name: 'date_published' },
   ]
