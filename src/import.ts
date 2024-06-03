@@ -6,32 +6,41 @@ const csv = require('csv-parser'); // Use require instead of import
 
 dotenv.config();
 
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
+async function connectDatabase() {
+if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL is not set in the environment variables.');
-  process.exit(1);
+    process.exit(1);
+  }
+  
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL
+  });
+  
+  client.connect();
+  return client;
 }
 
-const client = new Client({
-  connectionString: DATABASE_URL
-});
-
-client.connect();
-
-async function deleteAllData() {
+async function deleteAllData(client: Client, table = 'all') {
   console.log('Deleting all data...');
-  await client.query('DELETE FROM target;');
-  await client.query('DELETE FROM emission;');
-  await client.query('DELETE FROM commitment;');
-  await client.query('DELETE FROM company;');
+  if (table === 'target' || table === 'all') await deleteFromTable(client, 'target');
+  if (table === 'commitment' || table === 'all') await deleteFromTable(client, 'commitment');
+  if (table === 'emission' || table === 'all') await deleteFromTable(client, 'emission');
+  if (table === 'company' || table === 'all') await deleteFromTable(client, 'company');
 }
 
-async function importAll() {
-  await deleteAllData();
-  await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv');
-  await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name');
-  await importCsvFileToPostgres(client, 'target', tableHeaders.target, './data/targets.csv', 'company_name');
+async function importAll(table = 'all') {
+  const client = await connectDatabase();
+  await deleteAllData(client, table);
+  if (table === 'company' || table === 'all') await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv');
+  if (table === 'emission' || table === 'all') await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name');
+  if (table === 'target' || table === 'all') await importCsvFileToPostgres(client, 'target', tableHeaders.target, './data/targets.csv', 'company_name', (filteredRow) => filteredRow.action === 'Target');
+  if (table === 'commitment' || table === 'all') await importCsvFileToPostgres(client, 'commitment', tableHeaders.commitment, './data/targets.csv', 'company_name', (filteredRow) => filteredRow.action === 'Commitment');
+  //await client.end();
+}
+
+async function deleteFromTable(client: Client, table: string) {
+  console.log(`Deleting data from ${table}...`);
+  await client.query(`DELETE FROM ${table};`);
 }
 
 async function importCsvFileToPostgres(
@@ -40,6 +49,7 @@ async function importCsvFileToPostgres(
   requiredHeaders: TableHeader[],
   csvFilePath = './data/companies.csv',
   previewField = 'name',
+  filter?: (filteredRow: Record<string, any>) => boolean
 ) {
   const results: any[] = [];
 
@@ -80,24 +90,27 @@ async function importCsvFileToPostgres(
               }
               return acc;
             }, {} as Record<string, any>);
-
             const columns = Object.keys(filteredRow).join(', ');
             const values = Object.values(filteredRow);
             const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
-
-            const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
-            await client.query(query, values);
-            console.log(`Imported ${tableName}:`, filteredRow[previewField]);
+            if (filter === undefined || filter(row) === true) {
+              const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
+              await client.query(query, values);
+              console.log(`Imported ${tableName}:`, filteredRow[previewField]);
+            } else {
+              console.log(`Skipped ${tableName}:`, filteredRow[previewField]);
+            }
           } catch (error: any) {
             console.warn('Error inserting row:', rowIndex, error?.message);
+            if (error?.message.includes('Client was closed and is not queryable')) {
+                process.exit(1);
+            }
           }
         }
 
         console.log('Data imported successfully.');
       } catch (error) {
         console.error('Error inserting data:', error);
-      } finally {
-        client.end();
       }
     });
 }
