@@ -79,7 +79,7 @@ async function importCsvFileToPostgres(
                 const snakeCaseHeader = toSnakeCase(header);
                 if (requiredHeaders.map(header => header.name).includes(snakeCaseHeader) && row[header] !== undefined) { // Use the original header name to access the row data
                   const requiredHeader = requiredHeaders.find(header => header.name === snakeCaseHeader);
-                  const valueTrimmed = row[header].replace('NA', '').trim();
+                  const valueTrimmed = row[header] === 'NA' ? '' : row[header].trim();
                   const valueFormatted = valueTrimmed === ''
                     ? null
                     : requiredHeader ?.type === 'integer'
