@@ -22,7 +22,7 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'hq_country' },
   ],
   emission: [
-    { name: 'company_name' },
+    { name: 'company_slug' },
     { name: 'year', type: 'integer' },
     { name: 'fiscal_year' },
     { name: 'scope_1', type: 'float' },
@@ -71,7 +71,7 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'status' },
   ],
   target: [
-    { name: 'company_name' },
+    { name: 'company_slug' },
     // { name: 'lei' },
     { name: 'action' },
     { name: 'full_target_language' },
@@ -89,7 +89,7 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'date_published', type: 'date' },
   ],
   commitment: [
-    { name: 'company_name' },
+    { name: 'company_slug' },
     { name: 'action' },
     { name: 'commitment_type' },
     { name: 'commitment_deadline', type: 'date' },
