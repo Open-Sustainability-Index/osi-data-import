@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
 import { toSnakeCase, checkHeaders, tableHeaders, TableHeader } from './utils';
+import { resolve } from 'path';
 const csv = require('csv-parser'); // Use require instead of import
 
 dotenv.config();
@@ -51,68 +52,72 @@ async function importCsvFileToPostgres(
   previewField = 'name',
   filter?: (filteredRow: Record<string, any>) => boolean
 ) {
-  const results: any[] = [];
+  return new Promise(async (resolve, reject) => {
+    const results: any[] = [];
 
-  fs.createReadStream(csvFilePath)
-    .pipe(csv())
-    .on('headers', (headers: string[]) => {
-      const snakeCaseHeaders = headers.map(toSnakeCase);
-      const missingHeaders = checkHeaders(requiredHeaders, snakeCaseHeaders);
-
-      if (missingHeaders.length > 0) {
-        console.error(`Missing headers: ${missingHeaders.join(', ')}`);
-        process.exit(1);
-      }
-
-      // console.log('Headers in CSV:', snakeCaseHeaders);
-    })
-    .on('data', (data: any) => results.push(data))
-    .on('end', async () => {
-      try {
-        let rowIndex = 0;
-        for (const row of results) {
-          rowIndex++;
-          try {
-            // Filter and map row data to required headers
-            const filteredRow = Object.keys(row).reduce((acc: Record<string, any>, header) => {
-              const snakeCaseHeader = toSnakeCase(header);
-              if (requiredHeaders.map(header => header.name).includes(snakeCaseHeader) && row[header] !== undefined) { // Use the original header name to access the row data
-                const requiredHeader = requiredHeaders.find(header => header.name === snakeCaseHeader);
-                const valueTrimmed = row[header].replace('NA', '').trim();
-                const valueFormatted = valueTrimmed === ''
-                  ? null
-                  : requiredHeader ?.type === 'integer'
-                    ? parseInt(valueTrimmed)
-                    : requiredHeader ?.type === 'float'
-                        ? parseFloat(valueTrimmed)
-                        : valueTrimmed;
-                acc[snakeCaseHeader] = valueFormatted;
+    fs.createReadStream(csvFilePath)
+      .pipe(csv())
+      .on('headers', (headers: string[]) => {
+        const snakeCaseHeaders = headers.map(toSnakeCase);
+        const missingHeaders = checkHeaders(requiredHeaders, snakeCaseHeaders);
+  
+        if (missingHeaders.length > 0) {
+          console.error(`Missing headers: ${missingHeaders.join(', ')}`);
+          process.exit(1);
+        }
+  
+        // console.log('Headers in CSV:', snakeCaseHeaders);
+      })
+      .on('data', (data: any) => results.push(data))
+      .on('end', async () => {
+        try {
+          let rowIndex = 0;
+          for (const row of results) {
+            rowIndex++;
+            try {
+              // Filter and map row data to required headers
+              const filteredRow = Object.keys(row).reduce((acc: Record<string, any>, header) => {
+                const snakeCaseHeader = toSnakeCase(header);
+                if (requiredHeaders.map(header => header.name).includes(snakeCaseHeader) && row[header] !== undefined) { // Use the original header name to access the row data
+                  const requiredHeader = requiredHeaders.find(header => header.name === snakeCaseHeader);
+                  const valueTrimmed = row[header].replace('NA', '').trim();
+                  const valueFormatted = valueTrimmed === ''
+                    ? null
+                    : requiredHeader ?.type === 'integer'
+                      ? parseInt(valueTrimmed)
+                      : requiredHeader ?.type === 'float'
+                          ? parseFloat(valueTrimmed)
+                          : valueTrimmed;
+                  acc[snakeCaseHeader] = valueFormatted;
+                }
+                return acc;
+              }, {} as Record<string, any>);
+              const columns = Object.keys(filteredRow).join(', ');
+              const values = Object.values(filteredRow);
+              const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
+              if (filter === undefined || filter(row) === true) {
+                const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
+                await client.query(query, values);
+                console.log(`Imported ${tableName}:`, filteredRow[previewField]);
+              } else {
+                // console.log(`Skipped ${tableName}:`, filteredRow[previewField]);
               }
-              return acc;
-            }, {} as Record<string, any>);
-            const columns = Object.keys(filteredRow).join(', ');
-            const values = Object.values(filteredRow);
-            const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
-            if (filter === undefined || filter(row) === true) {
-              const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
-              await client.query(query, values);
-              console.log(`Imported ${tableName}:`, filteredRow[previewField]);
-            } else {
-              console.log(`Skipped ${tableName}:`, filteredRow[previewField]);
-            }
-          } catch (error: any) {
-            console.warn('Error inserting row:', rowIndex, error?.message);
-            if (error?.message.includes('Client was closed and is not queryable')) {
-                process.exit(1);
+            } catch (rowError: any) {
+              console.warn('Error inserting row:', rowIndex, rowError?.message);
+              if (rowError?.message.includes('Client was closed and is not queryable')) {
+                reject(rowError);
+              }
             }
           }
+          console.log('Data imported successfully.');
+          resolve('Data imported successfully.');
+        } catch (finalError) {
+          console.error('Error inserting data:', finalError);
+          reject(finalError);
         }
-
-        console.log('Data imported successfully.');
-      } catch (error) {
-        console.error('Error inserting data:', error);
-      }
-    });
+      });
+  })
+  
 }
 
 importAll();
