@@ -49,7 +49,7 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'cat_13', type: 'float' },
     { name: 'cat_14', type: 'float' },
     { name: 'cat_15', type: 'float' },
-    { name: 'all_cats', type: 'float' },
+    { name: 'all_cats' },
     { name: 'upstream_scope_3', type: 'float' },
     { name: 'share_upstream_of_scope_3', type: 'float' },
     { name: 'scope_1_share_of_total_upstream_emissions', type: 'float' },
@@ -79,7 +79,7 @@ export const tableHeaders: Record<string, TableHeader[]> = {
     { name: 'target' },
     { name: 'target_wording' },
     { name: 'scope' },
-    { name: 'target_value' },
+    { name: 'target_value', type: 'float' },
     { name: 'type' },
     { name: 'sub_type' }, // TODO: fix this header
     { name: 'target_classification' },
