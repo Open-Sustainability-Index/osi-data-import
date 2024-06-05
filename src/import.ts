@@ -31,10 +31,10 @@ async function deleteAllData(client: Client, table = 'all') {
 async function importAll(table = 'all') {
   const client = await connectDatabase();
   await deleteAllData(client, table);
-  if (table === 'company' || table === 'all') await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv', undefined, (row) => row.Dupe === '');
-  if (table === 'emission' || table === 'all') await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name', (row) => row.year !== '');
-  if (table === 'target' || table === 'all') await importCsvFileToPostgres(client, 'target', tableHeaders.target, './data/targets.csv', 'company_name', (row) => row.Action === 'Target');
-  if (table === 'commitment' || table === 'all') await importCsvFileToPostgres(client, 'commitment', tableHeaders.commitment, './data/targets.csv', 'company_name', (row) => row.Action === 'Commitment');
+  if (table === 'company' || table === 'all') await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv', 'Slug', (row) => row.Dupe === '');
+  if (table === 'emission' || table === 'all') await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_slug', (row) => row.year !== '');
+  if (table === 'target' || table === 'all') await importCsvFileToPostgres(client, 'target', tableHeaders.target, './data/targets.csv', 'company_slug', (row) => row.Action === 'Target');
+  if (table === 'commitment' || table === 'all') await importCsvFileToPostgres(client, 'commitment', tableHeaders.commitment, './data/targets.csv', 'company_slug', (row) => row.Action === 'Commitment');
   await client.end();
 }
 
@@ -48,7 +48,7 @@ async function importCsvFileToPostgres(
   tableName: string,
   requiredHeaders: TableHeader[],
   csvFilePath = './data/companies.csv',
-  previewField = 'name',
+  previewField: string,
   filter?: (filteredRow: Record<string, any>) => boolean
 ) {
   return new Promise(async (resolve, reject) => {
@@ -99,9 +99,9 @@ async function importCsvFileToPostgres(
               if (filter === undefined || filter(row) === true) {
                 const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
                 await client.query(query, values);
-                // console.log(`Imported ${tableName}:`, filteredRow[previewField]);
+                // console.log(`Imported ${tableName}:`, row[previewField]);
               } else {
-                // console.log(`Skipped ${tableName}:`, filteredRow[previewField]);
+                // console.log(`Skipped ${tableName}:`, row[previewField]);
               }
             } catch (rowError: any) {
               console.warn(`Error inserting ${tableName}:`, rowIndex, row[previewField], rowError?.message);
