@@ -1,8 +1,7 @@
 import * as fs from 'fs';
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
-import { toSnakeCase, checkHeaders, tableHeaders, TableHeader } from './utils';
-import { resolve } from 'path';
+import { toSnakeCase, checkHeaders, tableHeaders, TableHeader, dateAsISO } from './utils';
 const csv = require('csv-parser'); // Use require instead of import
 
 dotenv.config();
@@ -32,11 +31,11 @@ async function deleteAllData(client: Client, table = 'all') {
 async function importAll(table = 'all') {
   const client = await connectDatabase();
   await deleteAllData(client, table);
-  if (table === 'company' || table === 'all') await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv');
-  if (table === 'emission' || table === 'all') await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name');
-  if (table === 'target' || table === 'all') await importCsvFileToPostgres(client, 'target', tableHeaders.target, './data/targets.csv', 'company_name', (filteredRow) => filteredRow.action === 'Target');
-  if (table === 'commitment' || table === 'all') await importCsvFileToPostgres(client, 'commitment', tableHeaders.commitment, './data/targets.csv', 'company_name', (filteredRow) => filteredRow.action === 'Commitment');
-  //await client.end();
+  if (table === 'company' || table === 'all') await importCsvFileToPostgres(client, 'company', tableHeaders.company, './data/companies.csv', undefined, (row) => row.Dupe === '');
+  if (table === 'emission' || table === 'all') await importCsvFileToPostgres(client, 'emission', tableHeaders.emission, './data/emissions.csv', 'company_name', (row) => row.year !== '');
+  if (table === 'target' || table === 'all') await importCsvFileToPostgres(client, 'target', tableHeaders.target, './data/targets.csv', 'company_name', (row) => row.Action === 'Target');
+  if (table === 'commitment' || table === 'all') await importCsvFileToPostgres(client, 'commitment', tableHeaders.commitment, './data/targets.csv', 'company_name', (row) => row.Action === 'Commitment');
+  await client.end();
 }
 
 async function deleteFromTable(client: Client, table: string) {
@@ -84,10 +83,12 @@ async function importCsvFileToPostgres(
                   const valueFormatted = valueTrimmed === ''
                     ? null
                     : requiredHeader ?.type === 'integer'
-                      ? parseInt(valueTrimmed)
+                      ? parseInt(valueTrimmed.replace(/,/g, ''))
                       : requiredHeader ?.type === 'float'
-                          ? parseFloat(valueTrimmed)
-                          : valueTrimmed;
+                          ? parseFloat(valueTrimmed.replace(/,/g, ''))
+                          : requiredHeader ?.type === 'date'
+                            ? dateAsISO(valueTrimmed)
+                            : valueTrimmed;
                   acc[snakeCaseHeader] = valueFormatted;
                 }
                 return acc;
@@ -98,12 +99,15 @@ async function importCsvFileToPostgres(
               if (filter === undefined || filter(row) === true) {
                 const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
                 await client.query(query, values);
-                console.log(`Imported ${tableName}:`, filteredRow[previewField]);
+                // console.log(`Imported ${tableName}:`, filteredRow[previewField]);
               } else {
                 // console.log(`Skipped ${tableName}:`, filteredRow[previewField]);
               }
             } catch (rowError: any) {
-              console.warn('Error inserting row:', rowIndex, rowError?.message);
+              console.warn(`Error inserting ${tableName}:`, rowIndex, row[previewField], rowError?.message);
+              if (rowError?.message.includes('invalid input syntax')) {
+                console.warn('Row:', row);
+              }
               if (rowError?.message.includes('Client was closed and is not queryable')) {
                 reject(rowError);
               }
