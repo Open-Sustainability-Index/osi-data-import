@@ -26,6 +26,7 @@ async function deleteAllData(client: Client, table = 'all') {
   if (table === 'commitment' || table === 'all') await deleteFromTable(client, 'commitment');
   if (table === 'emission' || table === 'all') await deleteFromTable(client, 'emission');
   if (table === 'company' || table === 'all') await deleteFromTable(client, 'company');
+  console.log('Deletion completed.\n');
 }
 
 async function importAll(table = 'all') {
@@ -104,7 +105,7 @@ async function importCsvFileToPostgres(
                 // console.log(`Skipped ${tableName}:`, row[previewField]);
               }
             } catch (rowError: any) {
-              console.warn(`Error inserting ${tableName}:`, rowIndex, row[previewField], rowError?.message);
+              console.warn(`Error inserting '${tableName}':`, rowIndex, row[previewField], rowError?.message);
               if (rowError?.message.includes('invalid input syntax')) {
                 console.warn('Row:', row);
               }
@@ -113,7 +114,7 @@ async function importCsvFileToPostgres(
               }
             }
           }
-          console.log('Data imported successfully.');
+          console.log(`Data for '${tableName}' imported successfully.\n`);
           resolve('Data imported successfully.');
         } catch (finalError) {
           console.error('Error inserting data:', finalError);
