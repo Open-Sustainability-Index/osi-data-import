@@ -125,7 +125,7 @@ async function importCsvFileToPostgres(
       try {
         await client.query(query);
       } catch (error: any) {
-        console.error('🚨', prettyPostgresError(error), '//', error?.detail?.substring(0, 100));
+        console.error('●', prettyPostgresError(error));
       }
     }
     console.log(`Done: '${tableName}'\n`);

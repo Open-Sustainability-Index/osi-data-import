@@ -145,6 +145,6 @@ export function chunkArray(array: any[], chunkSize = 5000) {
 
 export function prettyPostgresError(error: any): string {
   return error?.message
-    ?.replace(/duplicate key value violates unique constraint "([^"]+)"/, 'Duplicate ("$1")')
-    .replace(/null value in column "([^"]+)" of relation "([^"]+)" violates not-null constraint/, 'Null value in column "$1"');
+    ?.replace(/duplicate key value violates unique constraint "([^"]+)"/, 'Duplicate: ' + error?.detail?.replace(/Key \(([^)]+)\)=\(([^)]+)\) already exists/, '($2)'))
+    .replace(/null value in column "([^"]+)" of relation "([^"]+)" violates not-null constraint/, 'Null value in column "$1": ' + error?.detail?.replace(/Failing row contains \(([^)]+)\)\./, '($1)'));
 }
