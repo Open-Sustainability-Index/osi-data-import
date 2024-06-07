@@ -101,9 +101,9 @@ async function importCsvFileToPostgres(
               if (filter === undefined || filter(row) === true) {
                 const query = `INSERT INTO ${tableName} (${columns}) VALUES (${valuePlaceholders})`;
                 await client.query(query, values);
-                // console.log(`Imported ${tableName}:`, row[previewField]);
+                console.log(`Imported ${tableName}:`, row[previewField]);
               } else {
-                // console.log(`Skipped ${tableName}:`, row[previewField]);
+                console.log(`Skipped ${tableName}:`, row[previewField]);
               }
             } catch (rowError: any) {
               console.warn(`Error inserting '${tableName}':`, rowIndex, `'${row[previewField]}'`, rowError?.message);
