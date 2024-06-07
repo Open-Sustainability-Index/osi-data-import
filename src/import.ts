@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
-import { toSnakeCase, checkHeaders, tableHeaders, TableHeader, dateAsISO, createInsertMultipleQuery, chunkArray } from './utils';
+import { toSnakeCase, checkHeaders, tableHeaders, TableHeader, dateAsISO, createInsertMultipleQuery, chunkArray, prettyPostgresError } from './utils';
 const csv = require('csv-parser'); // Use require instead of import
 
 dotenv.config();
@@ -111,7 +111,7 @@ async function importCsvFileToPostgres(
   previewField: string,
   filter?: (filteredRow: Record<string, any>) => boolean
 ) {
-    console.log('\n---------- Start import:', tableName, '----------');
+    console.log(`---------- Start import: '${tableName}' ----------`);
     const rows = await importCsvFile(tableName, requiredHeaders, csvFilePath, previewField, filter);
     const formattedRows = rows.map(row => formatRow(row, requiredHeaders));
     console.log(`'${tableName}' rows:`, formattedRows.length);
@@ -125,9 +125,10 @@ async function importCsvFileToPostgres(
       try {
         await client.query(query);
       } catch (error: any) {
-        console.error('Error inserting data:', error?.message, '\n ', error?.detail);
+        console.error('🚨', prettyPostgresError(error), '//', error?.detail?.substring(0, 100));
       }
     }
+    console.log(`Done: '${tableName}'\n`);
 }
 
 importAll();
