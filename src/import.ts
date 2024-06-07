@@ -105,7 +105,7 @@ async function importCsvFileToPostgres(
                 // console.log(`Skipped ${tableName}:`, row[previewField]);
               }
             } catch (rowError: any) {
-              console.warn(`Error inserting '${tableName}':`, rowIndex, row[previewField], rowError?.message);
+              console.warn(`Error inserting '${tableName}':`, rowIndex, `'${row[previewField]}'`, rowError?.message);
               if (rowError?.message.includes('invalid input syntax')) {
                 console.warn('Row:', row);
               }
