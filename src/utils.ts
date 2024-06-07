@@ -123,16 +123,22 @@ export const createInsertMultipleQuery = (tableName: string, rows: any[]): Query
   const firstRow = rows[0];
   const headers = Object.keys(firstRow);
   const parameterPlaceholderString = makeParameterString(headers.length, rows.length);
-  const values = rows.reduce((acc, cv) => {
-    acc.push(...Object.values(cv)) // rowValues
+  const values = rows.reduce((acc, row) => {
+    acc.push(...Object.values(row))
     return acc
   }, [])
-  console.log('parameterPlaceholderString: ...', parameterPlaceholderString.slice(-40));
-  console.log('values.length:', values.length, values[0]);
   const query = {
     text: `INSERT INTO ${tableName} (${headers.join(', ')})
     VALUES ${parameterPlaceholderString}`,
     values
   }
   return query;
+}
+
+export function chunkArray(array: any[], chunkSize = 5000) {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
 }
