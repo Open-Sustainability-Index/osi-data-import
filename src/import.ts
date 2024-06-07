@@ -53,6 +53,7 @@ async function importCsvFileToPostgres(
   filter?: (filteredRow: Record<string, any>) => boolean
 ) {
   return new Promise(async (resolve, reject) => {
+    console.log('Start import:', tableName);
     const results: any[] = [];
 
     fs.createReadStream(csvFilePath)
