@@ -1,4 +1,5 @@
 import * as _ from 'lodash';
+import { QueryConfig } from 'pg';
 
 // Convert a string to snake_case
 export function toSnakeCase(str: string): string {
@@ -113,3 +114,25 @@ export const dateAsISO = (date: Date | string): string | undefined => (date !== 
   : undefined;
 
 export const formatDate = (dateObj: Date): string => `${dateObj.getFullYear()}-${('0' + (dateObj.getMonth() + 1).toString()).slice(-2)}-${('0' + dateObj.getDate().toString()).slice(-2)}`
+
+function makeParameterString(columnCount: number, rowCount: number) {
+  return Array.from({ length: rowCount }, (_, i) => `(${Array.from({ length: columnCount }, (_, j) => `$${i * columnCount + j + 1}`).join(', ')})`).join(', ')
+}
+
+export const createInsertMultipleQuery = (tableName: string, rows: any[]): QueryConfig => {
+  const firstRow = rows[0];
+  const headers = Object.keys(firstRow);
+  const parameterPlaceholderString = makeParameterString(headers.length, rows.length);
+  const values = rows.reduce((acc, cv) => {
+    acc.push(...Object.values(cv)) // rowValues
+    return acc
+  }, [])
+  console.log('parameterPlaceholderString: ...', parameterPlaceholderString.slice(-40));
+  console.log('values.length:', values.length, values[0]);
+  const query = {
+    text: `INSERT INTO ${tableName} (${headers.join(', ')})
+    VALUES ${parameterPlaceholderString}`,
+    values
+  }
+  return query;
+}
